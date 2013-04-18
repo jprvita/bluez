@@ -2941,6 +2941,8 @@ static void search_cb(sdp_list_t *recs, int err, gpointer user_data)
 send_reply:
 	device_svc_resolved(device, err);
 
+	g_dbus_flush_properties(dbus_conn, req->device->path);
+
 	if (!device->temporary)
 		store_device_info(device);
 
