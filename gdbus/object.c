@@ -1789,6 +1789,25 @@ gboolean g_dbus_get_properties(DBusConnection *connection, const char *path,
 	return TRUE;
 }
 
+gboolean g_dbus_flush_properties(DBusConnection *connection, const char *path)
+{
+	struct generic_data *data;
+
+	if (path == NULL)
+		return FALSE;
+
+	if (!dbus_connection_get_object_path_data(connection, path,
+					(void **) &data) || data == NULL)
+		return FALSE;
+
+	if (data->process_id)
+		g_source_remove(data->process_id);
+
+	process_changes(data);
+
+	return TRUE;
+}
+
 gboolean g_dbus_attach_object_manager(DBusConnection *connection)
 {
 	struct generic_data *data;
