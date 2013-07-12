@@ -2691,10 +2691,14 @@ static int update_record(struct browse_req *req, const char *uuid,
 							sdp_record_t *rec)
 {
 	GSList *l;
+	DBG("\t\tJPRVITA\t\t update_record(%s)", uuid);
 
 	/* Check for duplicates */
 	if (sdp_list_find(req->records, rec, rec_cmp))
+	{
+		DBG("\t\tJPRVITA\t\t record already present in req->records, returning");
 		return -EALREADY;
+	}
 
 	/* Copy record */
 	req->records = sdp_list_append(req->records, sdp_copy_record(rec));
@@ -2702,13 +2706,17 @@ static int update_record(struct browse_req *req, const char *uuid,
 	/* Check if UUID is duplicated */
 	l = g_slist_find_custom(req->device->uuids, uuid, bt_uuid_strcmp);
 	if (l == NULL) {
+		DBG("\t\tJPRVITA\t\t %s NOT present in req->device->uuids", uuid);
 		l = g_slist_find_custom(req->profiles_added, uuid,
 							bt_uuid_strcmp);
 		if (l != NULL)
 			return 0;
+		DBG("\t\tJPRVITA\t\t %s not present in req->profiles_added, appending", uuid);
 		req->profiles_added = g_slist_append(req->profiles_added,
 							g_strdup(uuid));
 	}
+        else
+		DBG("\t\tJPRVITA\t\t %s ALREADY present in req->device->uuids", uuid);
 
 	return 0;
 }
@@ -2725,16 +2733,23 @@ static void update_bredr_services(struct browse_req *req, sdp_list_t *recs)
 	char *data;
 	gsize length = 0;
 
+	DBG("\t\tJPRVITA\t\t update_bredr_services()");
 	ba2str(btd_adapter_get_address(device->adapter), srcaddr);
 	ba2str(&device->bdaddr, dstaddr);
 
 	if (!device->temporary) {
+		int bla;
+                DBG("\t\tJPRVITA\t\t !device->temporary");
 		snprintf(sdp_file, PATH_MAX, STORAGEDIR "/%s/cache/%s",
 							srcaddr, dstaddr);
 		sdp_file[PATH_MAX] = '\0';
 
 		sdp_key_file = g_key_file_new();
-		g_key_file_load_from_file(sdp_key_file, sdp_file, 0, NULL);
+		bla = g_key_file_load_from_file(sdp_key_file, sdp_file, 0, NULL);
+		if (bla)
+			DBG("\t\tJPRVITA\t\t device information FOUND in the storage");
+		else
+			DBG("\t\tJPRVITA\t\t device information NOT found in the storage");
 
 		snprintf(att_file, PATH_MAX, STORAGEDIR "/%s/%s/attributes",
 							srcaddr, dstaddr);
@@ -2749,11 +2764,14 @@ static void update_bredr_services(struct browse_req *req, sdp_list_t *recs)
 		sdp_list_t *svcclass = NULL;
 		char *profile_uuid;
 
+		DBG("\t\tJPRVITA\t\t inspecting a new SDP record");
 		if (!rec)
 			break;
+		DBG("\t\tJPRVITA\t\t valid record");
 
 		if (sdp_get_service_classes(rec, &svcclass) < 0)
 			continue;
+		DBG("\t\tJPRVITA\t\t sdp_get_service_classes() succeeded");
 
 		/* Check for empty service classes list */
 		if (svcclass == NULL) {
@@ -2763,6 +2781,7 @@ static void update_bredr_services(struct browse_req *req, sdp_list_t *recs)
 
 		/* Extract the first element and skip the remainning */
 		profile_uuid = bt_uuid2string(svcclass->data);
+                DBG("\t\tJPRVITA\t\t profile_uuid=\"%s\"", profile_uuid);
 		if (!profile_uuid) {
 			sdp_list_free(svcclass, free);
 			continue;

@@ -512,6 +512,7 @@ static DBusMessage *release(DBusConnection *conn, DBusMessage *msg,
 
 	sender = dbus_message_get_sender(msg);
 
+        DBG("Release() owner=%s, sender=%s", owner->name, sender);
 	if (owner == NULL || g_strcmp0(owner->name, sender) != 0)
 		return btd_error_not_authorized(msg);
 
